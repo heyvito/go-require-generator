@@ -8,9 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
 )
 
 func main() {
@@ -172,11 +170,12 @@ func getLastTag(verbose bool, gitExec, dir string) (bool, string) {
 }
 
 func getLastCommit(verbose bool, gitExec, dir string) (bool, string, string) {
-	cmd := exec.Command(gitExec, "log", "-1", "--format=%ct")
+	cmd := exec.Command(gitExec, "log", "-1", "--date=format-local:%Y%m%d%H%M%S", "--format=%cd")
 	if verbose {
 		fmt.Printf("verbose: Executing %s %s\n", gitExec, strings.Join(cmd.Args, " "))
 	}
 	cmd.Dir = filepath.Join(dir, "repo")
+	cmd.Env = append(os.Environ(), "TZ=GMT")
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -194,12 +193,7 @@ func getLastCommit(verbose bool, gitExec, dir string) (bool, string, string) {
 		return false, "", ""
 	}
 
-	rawUnix := strings.TrimSpace(stdout.String())
-	unix, err := strconv.ParseInt(rawUnix, 10, 64)
-	if err != nil {
-		return false, "", ""
-	}
-	unixTS := time.Unix(unix, 0)
+	ts := strings.TrimSpace(stdout.String())
 
 	cmd = exec.Command(gitExec, "rev-parse", "--short=12", "HEAD")
 	if verbose {
@@ -226,7 +220,7 @@ func getLastCommit(verbose bool, gitExec, dir string) (bool, string, string) {
 
 	commit := strings.TrimSpace(stdout.String())
 
-	return true, commit, unixTS.Format("20060102150405")
+	return true, commit, ts
 }
 
 func processRepo(verbose bool, path string, gitPath string) (string, error) {
