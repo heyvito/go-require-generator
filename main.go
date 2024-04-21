@@ -104,6 +104,10 @@ func cloneRepo(verbose bool, name, into, gitExec string, ssh bool) error {
 	args := []string{"clone", "--depth=1", "--bare"}
 	hostPath := strings.SplitN(name, "/", 2)
 	host, path := hostPath[0], hostPath[1]
+	splitPath := strings.Split(path, "/")
+	if len(splitPath) > 2 {
+		path = strings.Join(splitPath[0:2], "/")
+	}
 
 	if ssh {
 		args = append(args, fmt.Sprintf("git@%s:%s", host, path))
